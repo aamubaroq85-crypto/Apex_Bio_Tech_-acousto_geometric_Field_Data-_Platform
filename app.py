@@ -7,7 +7,7 @@ from fpdf import FPDF
 # Konfigurasi Halaman
 st.set_page_config(
     page_title="Apex Bio Tech | Acousto-Geometric Platform",
-    page_icon="⛏️",
+    page_icon="⛏️️",
     layout="wide"
 )
 
@@ -80,7 +80,8 @@ def generate_pdf_report(site_name, df_subset):
     pdf.set_font('helvetica', 'I', 9)
     pdf.multi_cell(0, 5, 'Catatan: Laporan ini dihasilkan secara otomatis oleh sistem analitik berbasis cloud Apex Bio Tech. Validasi kekuatan batuan diukur menggunakan metode non-destruktif gelombang akustik terarah.')
     
-    return pdf.output(dest='S').encode('latin1')
+    # Mengembalikan output PDF dalam format bytes
+    return pdf.output()
 
 # Sidebar Navigasi
 st.sidebar.title("⛏️ Apex Bio Tech Suite")
