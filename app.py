@@ -80,8 +80,8 @@ def generate_pdf_report(site_name, df_subset):
     pdf.set_font('helvetica', 'I', 9)
     pdf.multi_cell(0, 5, 'Catatan: Laporan ini dihasilkan secara otomatis oleh sistem analitik berbasis cloud Apex Bio Tech. Validasi kekuatan batuan diukur menggunakan metode non-destruktif gelombang akustik terarah.')
     
-    # Mengembalikan output PDF dalam format bytes
-    return pdf.output()
+    # Konversi output FPDF menjadi bytes agar dapat dibaca oleh st.download_button
+    return bytes(pdf.output())
 
 # Sidebar Navigasi
 st.sidebar.title("⛏️ Apex Bio Tech Suite")
