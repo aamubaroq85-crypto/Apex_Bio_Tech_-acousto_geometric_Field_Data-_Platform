@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import datetime
+from fpdf import FPDF
 
 # Konfigurasi Halaman
 st.set_page_config(
@@ -10,7 +11,78 @@ st.set_page_config(
     layout="wide"
 )
 
-# Sidebar Navigasi & Status Langganan
+# Kelas Generator PDF Berkop Perusahaan
+class PDFReport(FPDF):
+    def header(self):
+        # Kop Perusahaan
+        self.set_font('helvetica', 'B', 16)
+        self.set_text_color(24, 43, 73)
+        self.cell(0, 8, 'APEX BIO TECH APPLIED TECHNOLOGIES', 0, 1, 'C')
+        
+        self.set_font('helvetica', '', 10)
+        self.set_text_color(100, 100, 100)
+        self.cell(0, 5, 'Divisi Geomekanika & Teknologi Acousto-Geometric Fluks Konstanta Zuhri (pi_eff)', 0, 1, 'C')
+        self.cell(0, 5, 'Email: contact@apexbiotech.internal | Web: portal.apexbiotech.io', 0, 1, 'C')
+        self.ln(5)
+        
+        # Garis Pembatas Kop
+        self.set_draw_color(41, 128, 185)
+        self.set_line_width(0.8)
+        self.line(10, 28, 200, 28)
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('helvetica', 'I', 8)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 10, f'Sertifikat Laporan Resmi Geoteknik - Halaman {self.page_no()}', 0, 0, 'C')
+
+def generate_pdf_report(site_name, df_subset):
+    pdf = PDFReport()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Judul Dokumen
+    pdf.set_font('helvetica', 'B', 14)
+    pdf.set_text_color(30, 30, 30)
+    pdf.cell(0, 8, f'LAPORAN SERTIFIKASI AUDIT POROSITAS & UCS', 0, 1, 'L')
+    
+    pdf.set_font('helvetica', '', 10)
+    pdf.cell(0, 6, f'Lokasi Pit / Blok: {site_name}', 0, 1, 'L')
+    pdf.cell(0, 6, f'Tanggal Cetak: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', 0, 1, 'L')
+    pdf.ln(5)
+    
+    # Tabel Data
+    pdf.set_font('helvetica', 'B', 9)
+    pdf.set_fill_color(41, 128, 185)
+    pdf.set_text_color(255, 255, 255)
+    
+    headers = ['Scan ID', 'Timestamp', 'Pi_Eff', 'Porositas (%)', 'UCS (MPa)', 'Status']
+    widths = [25, 35, 20, 25, 25, 50]
+    
+    for i, h in enumerate(headers):
+        pdf.cell(widths[i], 7, h, 1, 0, 'C', True)
+    pdf.ln()
+    
+    pdf.set_font('helvetica', '', 9)
+    pdf.set_text_color(0, 0, 0)
+    
+    for index, row in df_subset.iterrows():
+        pdf.cell(widths[0], 6, str(row['Scan_ID']), 1, 0, 'C')
+        pdf.cell(widths[1], 6, str(row['Timestamp']), 1, 0, 'C')
+        pdf.cell(widths[2], 6, str(row['Pi_Eff_Value']), 1, 0, 'C')
+        pdf.cell(widths[3], 6, str(row['Porosity_Pct']), 1, 0, 'C')
+        pdf.cell(widths[4], 6, str(row['UCS_Strength_MPa']), 1, 0, 'C')
+        pdf.cell(widths[5], 6, str(row['Status_Kelayakan']), 1, 0, 'L')
+        pdf.ln()
+        
+    pdf.ln(10)
+    pdf.set_font('helvetica', 'I', 9)
+    pdf.multi_cell(0, 5, 'Catatan: Laporan ini dihasilkan secara otomatis oleh sistem analitik berbasis cloud Apex Bio Tech. Validasi kekuatan batuan diukur menggunakan metode non-destruktif gelombang akustik terarah.')
+    
+    return pdf.output(dest='S').encode('latin1')
+
+# Sidebar Navigasi
 st.sidebar.title("⛏️ Apex Bio Tech Suite")
 st.sidebar.markdown("**Acousto-Geometric Porosity Scanner**")
 st.sidebar.markdown("---")
@@ -46,10 +118,7 @@ if menu == "Dashboard Utama":
     
     st.markdown("---")
     st.subheader("Peta Sebaran Titik Pemindaian Terbaru")
-    
     st.dataframe(st.session_state.scans_db, use_container_width=True)
-    
-    st.info("💡 **Tips Bisnis:** Gunakan modul *Field Service* untuk memasukkan data baru saat melakukan audit di lokasi klien, dan berikan akses *Client Subscription* bagi manajemen tambang untuk memantau data secara real-time.")
 
 elif menu == "Field Service Logger (Insitu)":
     st.title("🛠️ Field Service: Input Data Pemindaian Lapangan")
@@ -97,8 +166,8 @@ elif menu == "Field Service Logger (Insitu)":
             st.balloons()
 
 elif menu == "Client Subscription Analytics":
-    st.title("📈 Client Portal: Analisis & Unduh Laporan Berlangganan")
-    st.markdown("Portal khusus klien tambang untuk memantau integritas dinding pit dan data pori batuan secara berkelanjutan (*Recurring SaaS*).")
+    st.title("📈 Client Portal: Analisis & Unduh Laporan Resmi")
+    st.markdown("Portal khusus klien tambang untuk memantau integritas dinding pit dan mengunduh sertifikat laporan ber-kop perusahaan (*Recurring SaaS*).")
     
     selected_site = st.selectbox("Pilih Area Pit Tambang untuk Analisis", st.session_state.scans_db['Site_Location'].unique())
     
@@ -113,12 +182,16 @@ elif menu == "Client Subscription Analytics":
     st.markdown("### Grafik Tren Porositas & Kekuatan Batuan")
     st.line_chart(filtered_data.set_index('Timestamp')[['Porosity_Pct', 'UCS_Strength_MPa']])
     
-    csv_data = filtered_data.to_csv(index=False).encode('utf-8')
+    st.markdown("---")
+    st.subheader("Unduh Dokumen Laporan Resmi")
+    
+    # Tombol Unduh PDF Berkop Perusahaan
+    pdf_bytes = generate_pdf_report(selected_site, filtered_data)
     st.download_button(
-        label="📥 Unduh Sertifikat Laporan Geoteknik Resmi (.CSV / PDF)",
-        data=csv_data,
-        file_name=f"Laporan_Porositas_{selected_site.replace(' ', '_')}.csv",
-        mime="text/css",
+        label="📥 Unduh Sertifikat Laporan Resmi (Format PDF)",
+        data=pdf_bytes,
+        file_name=f"Sertifikat_Geoteknik_{selected_site.replace(' ', '_')}.pdf",
+        mime="application/pdf",
     )
 
 elif menu == "Manajemen Kontrak & Lisensi":
@@ -132,7 +205,7 @@ elif menu == "Manajemen Kontrak & Lisensi":
         st.markdown("""
         * **Skema:** Penagihan per hari penugasan atau per 100 titik pemindaian di lokasi pit.
         * **Target:** Kontraktor tambang baru yang membutuhkan asesmen cepat tanpa investasi alat.
-        * **Estimasi Margin:** Sangat Tinggi (Biaya variabel alat rendah, nilai jasa konsultasi ahli berdasarkan risiko keselamatan).
+        * **Estimasi Margin:** Sangat Tinggi.
         """)
         if st.button("Buat Penawaran Field Service Baru"):
             st.success("Formulir penawaran baru berhasil diinisiasi!")
@@ -141,8 +214,8 @@ elif menu == "Manajemen Kontrak & Lisensi":
         st.subheader("Tier 2: Cloud Software Subscription (SaaS)")
         st.markdown("""
         * **Skema:** Langganan bulanan (*Monthly Recurring Revenue*) per lisensi tambang.
-        * **Fasilitas:** Akses *real-time dashboard*, pemantauan stabilitas lereng jarak jauh, dan unduh laporan tak terbatas.
-        * **Estimasi Margin:** Stabil & Berkelanjutan (Pendapatan pasif bulanan dari infrastruktur cloud).
+        * **Fasilitas:** Akses *real-time dashboard*, pemantauan stabilitas lereng jarak jauh, dan unduh PDF tak terbatas.
+        * **Estimasi Margin:** Stabil & Berkelanjutan.
         """)
         if st.button("Kelola Lisensi Klien Aktif"):
             st.info("Menghubungkan ke panel manajemen lisensi klien aktif...")
