@@ -47,7 +47,6 @@ if menu == "Dashboard Utama":
     st.markdown("---")
     st.subheader("Peta Sebaran Titik Pemindaian Terbaru")
     
-    # Menampilkan tabel data pemindaian
     st.dataframe(st.session_state.scans_db, use_container_width=True)
     
     st.info("💡 **Tips Bisnis:** Gunakan modul *Field Service* untuk memasukkan data baru saat melakukan audit di lokasi klien, dan berikan akses *Client Subscription* bagi manajemen tambang untuk memantau data secara real-time.")
@@ -63,14 +62,13 @@ elif menu == "Field Service Logger (Insitu)":
             site_loc = st.text_input("Lokasi Pit / Blok Pengujian", "Pit Selatan - Level 2")
             operator_id = st.text_input("ID Teknisi / Operator", "ENG-BAROQ-01")
         with col_f2:
-            pi_eff = st.number_input("Nilai Kalibrasi $\pi_{\text{eff}}$", value=1.618033, format="%.6f")
+            pi_eff = st.number_input("Nilai Kalibrasi pi_eff", value=1.618033, format="%.6f")
             acoustic_freq = st.number_input("Frekuensi Resonansi Akustik (kHz)", value=45.5)
             raw_attenuation = st.number_input("Atenuasi Gelombang (dB/m)", value=2.15)
         
         submitted = st.form_submit_button("Proses Pemindaian & Hitung Parameter")
         
         if submitted:
-            # Algoritma simulasi turunan konstanta Zuhri untuk porositas dan UCS
             calculated_porosity = round(abs(np.sin(pi_eff) * 25 + (raw_attenuation * 3.5)), 2)
             calculated_ucs = round(max(10, 150 - (calculated_porosity * 4.2)), 2)
             
@@ -102,7 +100,6 @@ elif menu == "Client Subscription Analytics":
     st.title("📈 Client Portal: Analisis & Unduh Laporan Berlangganan")
     st.markdown("Portal khusus klien tambang untuk memantau integritas dinding pit dan data pori batuan secara berkelanjutan (*Recurring SaaS*).")
     
-    # Filter berdasarkan lokasi
     selected_site = st.selectbox("Pilih Area Pit Tambang untuk Analisis", st.session_state.scans_db['Site_Location'].unique())
     
     filtered_data = st.session_state.scans_db[st.session_state.scans_db['Site_Location'] == selected_site]
@@ -116,13 +113,12 @@ elif menu == "Client Subscription Analytics":
     st.markdown("### Grafik Tren Porositas & Kekuatan Batuan")
     st.line_chart(filtered_data.set_index('Timestamp')[['Porosity_Pct', 'UCS_Strength_MPa']])
     
-    # Tombol Ekspor Laporan berbayar/langganan
     csv_data = filtered_data.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="📥 Unduh Sertifikat Laporan Geoteknik Resmi (.CSV / PDF)",
         data=csv_data,
         file_name=f"Laporan_Porositas_{selected_site.replace(' ', '_')}.csv",
-        mime="text/csv",
+        mime="text/css",
     )
 
 elif menu == "Manajemen Kontrak & Lisensi":
@@ -138,7 +134,8 @@ elif menu == "Manajemen Kontrak & Lisensi":
         * **Target:** Kontraktor tambang baru yang membutuhkan asesmen cepat tanpa investasi alat.
         * **Estimasi Margin:** Sangat Tinggi (Biaya variabel alat rendah, nilai jasa konsultasi ahli berdasarkan risiko keselamatan).
         """)
-        st.button("Buat Penawaran Field Service Baru")
+        if st.button("Buat Penawaran Field Service Baru"):
+            st.success("Formulir penawaran baru berhasil diinisiasi!")
         
     with col_p2:
         st.subheader("Tier 2: Cloud Software Subscription (SaaS)")
@@ -147,4 +144,5 @@ elif menu == "Manajemen Kontrak & Lisensi":
         * **Fasilitas:** Akses *real-time dashboard*, pemantauan stabilitas lereng jarak jauh, dan unduh laporan tak terbatas.
         * **Estimasi Margin:** Stabil & Berkelanjutan (Pendapatan pasif bulanan dari infrastruktur cloud).
         """)
-        st.button("Kelola Lisensi Klien Aktif")
+        if st.button("Kelola Lisensi Klien Aktif"):
+            st.info("Menghubungkan ke panel manajemen lisensi klien aktif...")
